@@ -1,0 +1,107 @@
+C51 COMPILER V9.60.0.0   DHT11                                                             05/19/2025 12:08:03 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DHT11
+OBJECT MODULE PLACED IN .\Objects\DHT11.obj
+COMPILER INVOKED BY: d:\Keil_v5\C51\BIN\C51.EXE DHT11.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\DHT
+                    -11.lst) TABS(2) OBJECT(.\Objects\DHT11.obj)
+
+line level    source
+
+   1          #include "dht11.h"
+   2          //#include "Delay.h"
+   3          
+   4          void delay_dht11(uint t)
+   5          {
+   6   1        while(t--);
+   7   1      }
+   8          
+   9          void Delayms(unsigned int xms)  //@11.0592MHz
+  10          {
+  11   1        int k;
+  12   1        for(k=0;k<xms;k++)
+  13   1        {
+  14   2          unsigned char data i, j;
+  15   2          _nop_();
+  16   2          i = 2;
+  17   2          j = 199;
+  18   2          do
+  19   2          {
+  20   3            while (--j);
+  21   3          } while (--i);
+  22   2        }
+  23   1      }
+  24          
+  25          uchar DHT11_Read_Byte(void)    
+  26          {        
+  27   1        uchar i,retry,dat=0;
+  28   1        for (i=0;i<8;i++) 
+  29   1        {
+  30   2          dat<<=1;
+  31   2          
+  32   2          while(DHT11_DQ_OUT == 0);//等待50us低电平过去
+  33   2          delay_dht11(3);         //延时3us
+  34   2          if(DHT11_DQ_OUT)
+  35   2            dat |= 0x01;
+  36   2          
+  37   2          retry=0;
+  38   2          while(DHT11_DQ_OUT&&retry<100)//等待变为低电平 12-14us 开始
+  39   2          {
+  40   3            retry++;
+  41   3            _nop_();
+  42   3          }
+  43   2        }
+  44   1        return dat;
+  45   1      }
+  46          /****
+  47          *******从DHT11读取一次数据函数
+  48          *******参量定义： temp:温度值(范围:0~50°)
+  49          *******           humi:湿度值(范围:20%~95%)
+  50          *******返回值：0:正常; 1:读取失败
+  51          *****/
+  52          uchar Dht11_Get_Temp_Humi_Value(uint *temp,uint *humi)
+  53          {        
+  54   1        uchar buf[5];
+C51 COMPILER V9.60.0.0   DHT11                                                             05/19/2025 12:08:03 PAGE 2   
+
+  55   1        uchar i;
+  56   1        
+  57   1        DHT11_DQ_OUT=0;                   //拉低DQ
+  58   1        Delayms(20);                //拉低至少18ms
+  59   1        DHT11_DQ_OUT=1;                   //DQ=1 
+  60   1        delay_dht11(4);
+  61   1        
+  62   1        if(DHT11_DQ_OUT == 0)
+  63   1        {
+  64   2          while(DHT11_DQ_OUT == 0);       //等待80us的低电平过去
+  65   2          while(DHT11_DQ_OUT == 1);       //等待80us的高电平过去
+  66   2          for(i=0;i<5;i++)                //读取40位数据
+  67   2          {
+  68   3            buf[i]=DHT11_Read_Byte();
+  69   3          }
+  70   2          if((buf[0]+buf[1]+buf[2]+buf[3])==buf[4])//校验和
+  71   2          {
+  72   3            *humi=buf[0]+buf[1];
+  73   3            *temp=buf[2]+buf[3];
+  74   3          }
+  75   2          else
+  76   2            return 1;
+  77   2        }
+  78   1        else
+  79   1          return 1;
+  80   1        return 0;     
+  81   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    236    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      13
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
